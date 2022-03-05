@@ -4,6 +4,8 @@ import (
 	"context"
 
 	"github.com/kamva/hexa"
+	"github.com/kamva/hexa/hlog"
+	"github.com/kamva/tracer"
 )
 
 type redisCacheProvider struct {
@@ -22,28 +24,33 @@ func (p *redisCacheProvider) HealthIdentifier() string {
 	return "redis_cache_provider"
 }
 
-func (p *redisCacheProvider) LivenessStatus(ctx context.Context) hexa.LivenessStatus {
-	if p.opts.Client.Ping(ctx).Err() != nil {
+func (h *redisCacheProvider) LivenessStatus(ctx context.Context) hexa.LivenessStatus {
+	con := h.opts.Pool.Get()
+	if _, err := con.Do("PING"); err != nil {
+		hlog.Error("error on send ping to Redis", hlog.ErrStack(tracer.Trace(err)), hlog.Err(err))
 		return hexa.StatusDead
 	}
+
 	return hexa.StatusAlive
 }
 
-func (p *redisCacheProvider) ReadinessStatus(ctx context.Context) hexa.ReadinessStatus {
-	if p.opts.Client.Ping(ctx).Err() != nil {
+func (h *redisCacheProvider) ReadinessStatus(ctx context.Context) hexa.ReadinessStatus {
+	con := h.opts.Pool.Get()
+	if _, err := con.Do("PING"); err != nil {
+		hlog.Error("error on send ping to Redis", hlog.ErrStack(tracer.Trace(err)), hlog.Err(err))
 		return hexa.StatusUnReady
 	}
 	return hexa.StatusReady
 }
 
-func (p *redisCacheProvider) HealthStatus(ctx context.Context) hexa.HealthStatus {
+func (h *redisCacheProvider) HealthStatus(ctx context.Context) hexa.HealthStatus {
 	return hexa.HealthStatus{
-		Id:    p.HealthIdentifier(),
-		Alive: p.LivenessStatus(ctx),
-		Ready: p.ReadinessStatus(ctx),
-		Tags:  nil,
+		Id:    h.HealthIdentifier(),
+		Alive: h.LivenessStatus(ctx),
+		Ready: h.ReadinessStatus(ctx),
 	}
 }
+
 
 var _ Provider = &redisCacheProvider{}
 var _ hexa.Health = &redisCacheProvider{}

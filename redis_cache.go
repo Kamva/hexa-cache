@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/go-redis/redis/v8"
+	"github.com/gomodule/redigo/redis"
 	"github.com/kamva/hexa/hlog"
 	"github.com/kamva/tracer"
 )
@@ -17,11 +17,13 @@ for i=1,#keys,5000 do
 end
 return keys`
 
+var deleteByPatternScript = redis.NewScript(0, DELETE_BY_PATTERN_SCRIPT)
+
 type redisCache struct {
 	// prefix is a global prefix
 	prefix     string
 	name       string
-	cli        *redis.Client
+	pool       *redis.Pool
 	marshal    Marshaler
 	unmarshal  Unmarshaler
 	defaultTTL time.Duration
@@ -29,7 +31,7 @@ type redisCache struct {
 
 type RedisOptions struct {
 	Prefix      string
-	Client      *redis.Client
+	Pool        *redis.Pool
 	Marshaler   Marshaler
 	Unmarshaler Unmarshaler
 	DefaultTTL  time.Duration
@@ -39,7 +41,7 @@ func NewRedisCache(name string, o *RedisOptions) Cache {
 	return &redisCache{
 		prefix:     o.Prefix,
 		name:       name,
-		cli:        o.Client,
+		pool:       o.Pool,
 		marshal:    o.Marshaler,
 		unmarshal:  o.Unmarshaler,
 		defaultTTL: o.DefaultTTL,
@@ -56,9 +58,9 @@ func (c *redisCache) key(k string) string {
 }
 
 func (c *redisCache) Get(ctx context.Context, key string, val interface{}) error {
-	b, err := c.cli.Get(ctx, c.key(key)).Bytes()
+	b, err := redis.Bytes(c.pool.Get().Do("GET", c.key(key)))
 	if err != nil {
-		if err == redis.Nil {
+		if err == redis.ErrNil {
 			return ErrKeyNotFound
 		}
 
@@ -82,16 +84,24 @@ func (c *redisCache) SetWithTTL(ctx context.Context, key string, val interface{}
 		return tracer.Trace(err)
 	}
 
-	return tracer.Trace(c.cli.Set(ctx, c.key(key), b, ttl).Err())
+	if ttl > 0 {
+		_, err = c.pool.Get().Do("SET", c.key(key), b, "px", ttl.Milliseconds())
+		return tracer.Trace(err)
+	}
+
+	_, err = c.pool.Get().Do("SET", c.key(key), b)
+	return tracer.Trace(err)
 }
 
 func (c *redisCache) Remove(ctx context.Context, key string) error {
-	return tracer.Trace(c.cli.Del(ctx, c.key(key)).Err())
+	_, err := c.pool.Get().Do("DEL", c.key(key))
+	return tracer.Trace(err)
 }
 
 func (c *redisCache) Purge(ctx context.Context) error {
 	hlog.Warn("purge cache store", hlog.String("name", c.name), hlog.String("prefix", c.prefix))
-	return tracer.Trace(c.cli.Eval(ctx, DELETE_BY_PATTERN_SCRIPT, nil, c.key("*")).Err())
+	_, err := deleteByPatternScript.Do(c.pool.Get(), c.key("*"))
+	return tracer.Trace(err)
 }
 
 var _ Cache = &redisCache{}

@@ -10,9 +10,9 @@ import (
 func redisProvider() Provider {
 	return NewRedisCacheProvider(&RedisOptions{
 		Prefix:      "cache_",
-		Client:      cli(0),
-		Marshaler:   MsgpackMarshaler,
-		Unmarshaler: MsgpackUnmarshaler,
+		Pool:        cli(0),
+		Marshaler:   MsgpackMarshal,
+		Unmarshaler: MsgpackUnmarshal,
 		DefaultTTL:  time.Minute,
 	})
 }
