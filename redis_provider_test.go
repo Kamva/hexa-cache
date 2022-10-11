@@ -9,7 +9,7 @@ import (
 
 func redisProvider() Provider {
 	return NewRedisCacheProvider(&RedisOptions{
-		Prefix:      "cache_",
+		Prefix:      "cache",
 		Pool:        cli(0),
 		Marshaler:   MsgpackMarshal,
 		Unmarshaler: MsgpackUnmarshal,

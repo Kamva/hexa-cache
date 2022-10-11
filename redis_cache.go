@@ -53,8 +53,8 @@ func (c *redisCache) Name() string {
 }
 
 func (c *redisCache) key(k string) string {
-	// e.g., cache_user_283jf38jf (prefix is "cache_")
-	return fmt.Sprintf("%s%s_%s", c.prefix, c.name, k)
+	// e.g., cache:user:283jf38jf (prefix is "cache")
+	return fmt.Sprintf("%s:%s:%s", c.prefix, c.name, k)
 }
 
 func (c *redisCache) Get(ctx context.Context, key string, val interface{}) error {

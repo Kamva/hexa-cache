@@ -27,7 +27,7 @@ func flushRedisDb(cli *redis.Pool) error {
 
 func TestNewRedisCache(t *testing.T) {
 	r := NewRedisCache("abc", &RedisOptions{
-		Prefix:      "cache_",
+		Prefix:      "cache",
 		Pool:        cli(0),
 		Marshaler:   MsgpackMarshal,
 		Unmarshaler: MsgpackUnmarshal,
@@ -39,7 +39,7 @@ func TestNewRedisCache(t *testing.T) {
 	}
 
 	assert.Equal(t, "abc", r.name)
-	assert.Equal(t, "cache_", r.prefix)
+	assert.Equal(t, "cache", r.prefix)
 	assert.Equal(t, time.Second*2, r.defaultTTL)
 	assert.Equal(t, MsgpackMarshal, r.marshal)
 	assert.Equal(t, MsgpackUnmarshal, r.unmarshal)
@@ -51,13 +51,13 @@ func TestRedisCache_key(t *testing.T) {
 		Key       string
 		ResultKey string
 	}{
-		{"t1", "", "cache_abc_"},
-		{"t2", "123", "cache_abc_123"},
-		{"t3", "*", "cache_abc_*"},
+		{"t1", "", "cache:abc:"},
+		{"t2", "123", "cache:abc:123"},
+		{"t3", "*", "cache:abc:*"},
 	}
 
 	r := NewRedisCache("abc", &RedisOptions{
-		Prefix:      "cache_",
+		Prefix:      "cache",
 		Pool:        cli(0),
 		Marshaler:   MsgpackMarshal,
 		Unmarshaler: MsgpackUnmarshal,
@@ -73,7 +73,7 @@ func TestRedisCache_key(t *testing.T) {
 
 func TestRedisCache_Name(t *testing.T) {
 	r := NewRedisCache("abc", &RedisOptions{
-		Prefix:      "cache_",
+		Prefix:      "cache",
 		Pool:        cli(0),
 		Marshaler:   MsgpackMarshal,
 		Unmarshaler: MsgpackUnmarshal,
@@ -86,7 +86,7 @@ func TestRedisCache_Name(t *testing.T) {
 func TestRedisCache_SetWithTTL(t *testing.T) {
 	client := cli(0)
 	r := NewRedisCache("abc", &RedisOptions{
-		Prefix:      "cache_",
+		Prefix:      "cache",
 		Pool:        client,
 		Marshaler:   MsgpackMarshal,
 		Unmarshaler: MsgpackUnmarshal,
@@ -102,10 +102,10 @@ func TestRedisCache_SetWithTTL(t *testing.T) {
 		MarshaledVal string
 		TTL          time.Duration
 	}{
-		{"t1", "k1", "cache_abc_k1", "hi", marshaledHi, 0}, // forever
-		{"t2", "k2", "cache_abc_k2", "hi", marshaledHi, 0}, // forever
-		{"t3", "k3", "cache_abc_k3", "hi", marshaledHi, 0}, // forever
-		{"t3", "k4", "cache_abc_k4", "hi", marshaledHi, time.Millisecond * 2},
+		{"t1", "k1", "cache:abc:k1", "hi", marshaledHi, 0}, // forever
+		{"t2", "k2", "cache:abc:k2", "hi", marshaledHi, 0}, // forever
+		{"t3", "k3", "cache:abc:k3", "hi", marshaledHi, 0}, // forever
+		{"t3", "k4", "cache:abc:k4", "hi", marshaledHi, time.Millisecond * 2},
 	}
 
 	ctx := context.Background()
@@ -141,7 +141,7 @@ func TestRedisCache_SetWithTTL(t *testing.T) {
 func TestRedisCache_Get(t *testing.T) {
 	client := cli(0)
 	r := NewRedisCache("abc", &RedisOptions{
-		Prefix:      "cache_",
+		Prefix:      "cache",
 		Pool:        client,
 		Marshaler:   MsgpackMarshal,
 		Unmarshaler: MsgpackUnmarshal,
@@ -157,10 +157,10 @@ func TestRedisCache_Get(t *testing.T) {
 		MarshaledVal string
 		TTL          time.Duration
 	}{
-		{"t1", "k1", "cache_abc_k1", "hi", marshaledHi, 0}, // forever
-		{"t2", "k2", "cache_abc_k2", "hi", marshaledHi, 0}, // forever
-		{"t3", "k3", "cache_abc_k3", "hi", marshaledHi, 0}, // forever
-		{"t3", "k4", "cache_abc_k4", "hi", marshaledHi, time.Millisecond * 2},
+		{"t1", "k1", "cache:abc:k1", "hi", marshaledHi, 0}, // forever
+		{"t2", "k2", "cache:abc:k2", "hi", marshaledHi, 0}, // forever
+		{"t3", "k3", "cache:abc:k3", "hi", marshaledHi, 0}, // forever
+		{"t3", "k4", "cache:abc:k4", "hi", marshaledHi, time.Millisecond * 2},
 	}
 
 	ctx := context.Background()
@@ -194,7 +194,7 @@ func TestRedisCache_Get(t *testing.T) {
 func TestRedisCache_Remove(t *testing.T) {
 	client := cli(0)
 	r := NewRedisCache("abc", &RedisOptions{
-		Prefix:      "cache_",
+		Prefix:      "cache",
 		Pool:        client,
 		Marshaler:   MsgpackMarshal,
 		Unmarshaler: MsgpackUnmarshal,
@@ -221,7 +221,7 @@ func TestRedisCache_Remove(t *testing.T) {
 func TestRedisCache_Purge(t *testing.T) {
 	client := cli(0)
 	r := NewRedisCache("abc", &RedisOptions{
-		Prefix:      "cache_",
+		Prefix:      "cache",
 		Pool:        client,
 		Marshaler:   MsgpackMarshal,
 		Unmarshaler: MsgpackUnmarshal,
